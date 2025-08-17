@@ -22,19 +22,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EntityScan(basePackages = "com.rookies4.myspringbootlab.entity")
 @EnableJpaRepositories(basePackages = "com.rookies4.myspringbootlab.repository")
 @TestPropertySource(properties = {
-        // H2 메모리 (MySQL 모드)
+
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",
 
-        // 하이버네이트 DDL 비활성화 → schema.sql로 스키마 생성
         "spring.jpa.hibernate.ddl-auto=none",
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.jpa.show-sql=true",
         "spring.jpa.properties.hibernate.format_sql=true",
 
-        // test/resources/schema.sql을 항상 먼저 실행
         "spring.sql.init.mode=always",
         "spring.sql.init.schema-locations=classpath:schema.sql"
 })
