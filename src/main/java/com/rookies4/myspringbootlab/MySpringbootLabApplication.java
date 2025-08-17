@@ -1,6 +1,6 @@
-package com.rookies4.MySpringbootLab;
+package com.rookies4.myspringbootlab;
 
-import com.rookies4.MySpringbootLab.config.MyPropProperties;
+import com.rookies4.myspringbootlab.config.MyPropProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

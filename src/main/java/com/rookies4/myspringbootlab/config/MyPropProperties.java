@@ -1,4 +1,4 @@
-package com.rookies4.MySpringbootLab.config;
+package com.rookies4.myspringbootlab.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

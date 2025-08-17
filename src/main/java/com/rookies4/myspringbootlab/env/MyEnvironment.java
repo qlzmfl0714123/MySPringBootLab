@@ -1,4 +1,4 @@
-package com.rookies4.MySpringbootLab.env;
+package com.rookies4.myspringbootlab.env;
 
 public class MyEnvironment {
     private String mode;
