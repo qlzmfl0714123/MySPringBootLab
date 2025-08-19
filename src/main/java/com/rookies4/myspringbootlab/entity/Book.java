@@ -1,54 +1,33 @@
 package com.rookies4.myspringbootlab.entity;
 
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "books", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_books_isbn", columnNames = "isbn")
-})
+@Table(name = "books")
+@Getter @Setter
 public class Book {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // H2에서도 동작
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "book_id")
     private Long id;
 
-    @Column(name = "title", nullable = false, length = 200)
+    @Column(nullable = false)
     private String title;
 
-    @Column(name = "author", nullable = false, length = 100)
+    @Column(nullable = false)
     private String author;
 
-    @Column(name = "isbn", nullable = false, length = 20)
+    @Column(unique = true, nullable = false)
     private String isbn;
 
-    @Column(name = "publish_date", nullable = false)
-    private LocalDate publishDate;
-
-    @Column(name = "price", nullable = false)
+    @Column(nullable = false)
     private Integer price;
 
-    protected Book() { /* JPA */ }
+    @Column(nullable = false)
+    private LocalDate publishDate;
 
-    public Book(String title, String author, String isbn, LocalDate publishDate, Integer price) {
-        this.title = title;
-        this.author = author;
-        this.isbn = isbn;
-        this.publishDate = publishDate;
-        this.price = price;
-    }
-
-    // --- getters / setters ---
-    public Long getId() { return id; }
-    public String getTitle() { return title; }
-    public String getAuthor() { return author; }
-    public String getIsbn() { return isbn; }
-    public LocalDate getPublishDate() { return publishDate; }
-    public Integer getPrice() { return price; }
-
-    public void setTitle(String title) { this.title = title; }
-    public void setAuthor(String author) { this.author = author; }
-    public void setIsbn(String isbn) { this.isbn = isbn; }
-    public void setPublishDate(LocalDate publishDate) { this.publishDate = publishDate; }
-    public void setPrice(Integer price) { this.price = price; }
 }

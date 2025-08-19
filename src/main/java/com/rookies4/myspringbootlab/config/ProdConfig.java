@@ -1,6 +1,5 @@
 package com.rookies4.myspringbootlab.config;
 
-import com.rookies4.myspringbootlab.env.MyEnvironment;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -10,8 +9,9 @@ import org.springframework.context.annotation.Profile;
 public class ProdConfig {
     @Bean
     public MyEnvironment myEnvironment() {
-        MyEnvironment env = new MyEnvironment();
-        env.setMode("운영환경");
-        return env;
+        return MyEnvironment.builder()
+                .mode("운영환경")
+                .build();
+
     }
 }
