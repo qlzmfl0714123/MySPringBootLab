@@ -1,6 +1,7 @@
 package com.rookies4.myspringbootlab;
 
 import com.rookies4.myspringbootlab.entity.Book;
+import com.rookies4.myspringbootlab.repository.BookRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

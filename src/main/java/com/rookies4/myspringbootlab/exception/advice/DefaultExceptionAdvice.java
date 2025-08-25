@@ -3,98 +3,110 @@ package com.rookies4.myspringbootlab.exception.advice;
 import com.rookies4.myspringbootlab.exception.BusinessException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.NoHandlerFoundException;
 
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestControllerAdvice
 @Slf4j
 public class DefaultExceptionAdvice {
 
-//    @ExceptionHandler(BusinessException.class)
-//    public ResponseEntity<ErrorObject> handleResourceNotFoundException(BusinessException ex) {
-//        ErrorObject errorObject = new ErrorObject();
-//        errorObject.setStatusCode(ex.getHttpStatus().value()); //404
-//        errorObject.setMessage(ex.getMessage());
-//
-//        log.error(ex.getMessage(), ex);
-//
-//        return new ResponseEntity<ErrorObject>(errorObject, HttpStatusCode.valueOf(ex.getHttpStatus().value()));
-//    }
 
-    /*
-        Spring6 버전에 추가된 ProblemDetail 객체에 에러정보를 담아서 리턴하는 방법
-     */
     @ExceptionHandler(BusinessException.class)
-    protected ProblemDetail handleException(BusinessException e) {
-        ProblemDetail problemDetail = ProblemDetail.forStatus(e.getHttpStatus());
-        problemDetail.setTitle("Not Found");
-        problemDetail.setDetail(e.getMessage());
-        problemDetail.setProperty("errorCategory", "Generic");
-        problemDetail.setProperty("timestamp", Instant.now());
-        return problemDetail;
+    public ResponseEntity<ErrorObject> handleBusinessException(BusinessException ex, WebRequest request) {
+        log.warn("BusinessException: {}", ex.getMessage());
+        ErrorObject body = new ErrorObject();
+        body.setStatusCode(ex.getHttpStatus().value());
+        body.setMessage(ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus()).body(body);
     }
 
-    //숫자타입의 값에 문자열타입의 값을 입력으로 받았을때 발생하는 오류
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorObject> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
+        List<String> messages = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(this::formatFieldError)
+                .collect(Collectors.toList());
+
+        String combined = messages.isEmpty() ? "Validation failed" : String.join("; ", messages);
+
+        ErrorObject body = new ErrorObject();
+        body.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        body.setMessage(combined);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    private String formatFieldError(FieldError fe) {
+        String field = fe.getField();
+        String defaultMsg = fe.getDefaultMessage();
+        Object rejected = fe.getRejectedValue();
+        return String.format("%s: %s (rejected: %s)", field, defaultMsg, rejected);
+    }
+
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    protected ResponseEntity<Object> handleException(HttpMessageNotReadableException e) {
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put("message", e.getMessage());
-        result.put("httpStatus", HttpStatus.BAD_REQUEST.value());
-
-        return new ResponseEntity<>(result, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorObject> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        log.warn("HttpMessageNotReadableException: {}", ex.getMessage());
+        ErrorObject body = new ErrorObject();
+        body.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        body.setMessage("Malformed request body or invalid value. Check types and date formats (yyyy-MM-dd).");
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
-//    @ExceptionHandler(RuntimeException.class)
-//    protected ResponseEntity<ErrorObject> handleException(RuntimeException e) {
-//        ErrorObject errorObject = new ErrorObject();
-//        errorObject.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-//        errorObject.setMessage(e.getMessage());
-//
-//        log.error(e.getMessage(), e);
-//
-//        return new ResponseEntity<ErrorObject>(errorObject, HttpStatusCode.valueOf(500));
-//    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorObject> handleMissingParam(MissingServletRequestParameterException ex) {
+        ErrorObject body = new ErrorObject();
+        body.setStatusCode(HttpStatus.BAD_REQUEST.value());
+        body.setMessage("Missing required parameter: " + ex.getParameterName());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
+    @ExceptionHandler(NoHandlerFoundException.class)
+    public ResponseEntity<ErrorObject> handleNoHandler(NoHandlerFoundException ex) {
+        ErrorObject body = new ErrorObject();
+        body.setStatusCode(HttpStatus.NOT_FOUND.value());
+        body.setMessage("Endpoint not found: " + ex.getRequestURL());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
+    }
 
     @ExceptionHandler(RuntimeException.class)
-    public Object handleRuntimeException(RuntimeException e, WebRequest request) {
-        log.error(e.getMessage(), e);
+    public Object handleRuntimeException(RuntimeException ex, WebRequest request) {
+        log.error("Unexpected error", ex);
 
-        // REST API 요청인지 확인 (Accept 헤더에 application/json이 포함되었거나 /api/로 시작하는 경로인 경우)
         if (isApiRequest(request)) {
-            ErrorObject errorObject = new ErrorObject();
-            errorObject.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
-            errorObject.setMessage(e.getMessage());
-            return new ResponseEntity<>(errorObject, HttpStatus.INTERNAL_SERVER_ERROR);
+            ErrorObject body = new ErrorObject();
+            body.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            body.setMessage(ex.getMessage() != null ? ex.getMessage() : "Internal Server Error");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
         } else {
-            // Thymeleaf 요청인 경우 ModelAndView로 500.html 반환
-            ModelAndView modelAndView = new ModelAndView();
-            modelAndView.setViewName("error/500");
-            modelAndView.addObject("error", e);
-            return modelAndView;
+            ModelAndView mav = new ModelAndView();
+            mav.setViewName("error/500");
+            mav.addObject("error", ex);
+            return mav;
         }
     }
 
     private boolean isApiRequest(WebRequest request) {
-        // 요청 경로가 /api/로 시작하는지 확인
-        String path = request.getDescription(false);
-        System.out.println("===> " + path);
-        if (path != null && path.startsWith("uri=/api/")) {
-            return true;
-        }
-        // Accept 헤더 확인
-        String acceptHeader = request.getHeader("Accept");
-        if (acceptHeader != null && acceptHeader.contains("application/json")) {
-            return true;
+        if (request instanceof ServletWebRequest swr) {
+            String path = swr.getRequest().getRequestURI();
+            if (path != null && path.startsWith("/api/")) return true;
+
+            String accept = swr.getHeader("Accept");
+            if (accept != null && accept.contains("application/json")) return true;
         }
         return false;
     }

@@ -1,70 +1,77 @@
 package com.rookies4.myspringbootlab.controller;
 
-import com.rookies4.myspringbootlab.entity.Book;
-import com.rookies4.myspringbootlab.exception.BusinessException;
-import com.rookies4.myspringbootlab.BookRepository;
+import com.rookies4.myspringbootlab.controller.dto.BookDTO;
+import com.rookies4.myspringbootlab.service.BookService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/books")
+@RequiredArgsConstructor
 public class BookController {
 
-    private final BookRepository bookRepository;
+    private final BookService bookService;
 
-    // 등록
-    @PostMapping
-    public Book create(@RequestBody Book book) {
-        return bookRepository.save(book);
-    }
-
-    // 전체 목록 조회
     @GetMapping
-    public List<Book> getBooks() {
-        return bookRepository.findAll();
+    public ResponseEntity<List<BookDTO.Response>> getAll() {
+        return ResponseEntity.ok(bookService.getAllBooks());
     }
 
-    // ID로 조회 (없으면 BusinessException)
     @GetMapping("/{id}")
-    public Book getBook(@PathVariable Long id) {
-        return bookRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Book Not Found", HttpStatus.NOT_FOUND));
+    public ResponseEntity<BookDTO.Response> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(bookService.getBookById(id));
     }
 
-    // ISBN으로 조회 (없으면 BusinessException)
     @GetMapping("/isbn/{isbn}")
-    public Book getBookByIsbn(@PathVariable String isbn) {
-        return bookRepository.findByIsbn(isbn)
-                .orElseThrow(() -> new BusinessException("Book Not Found", HttpStatus.NOT_FOUND));
+    public ResponseEntity<BookDTO.Response> getByIsbn(@PathVariable String isbn) {
+        return ResponseEntity.ok(bookService.getBookByIsbn(isbn));
     }
 
-    // 수정
+    @GetMapping("/search/author")
+    public ResponseEntity<List<BookDTO.Response>> searchByAuthor(@RequestParam String author) {
+        return ResponseEntity.ok(bookService.getBooksByAuthor(author));
+    }
+
+    @GetMapping("/search/title")
+    public ResponseEntity<List<BookDTO.Response>> searchByTitle(@RequestParam String title) {
+        return ResponseEntity.ok(bookService.getBooksByTitle(title));
+    }
+
+    @PostMapping
+    public ResponseEntity<BookDTO.Response> create(@RequestBody @Valid BookDTO.Request request) {
+        return ResponseEntity.ok(bookService.createBook(request));
+    }
+
     @PutMapping("/{id}")
-    public Book update(@PathVariable Long id, @RequestBody Book req) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Book Not Found", HttpStatus.NOT_FOUND));
-
-        book.setTitle(req.getTitle());
-        book.setAuthor(req.getAuthor());
-        book.setIsbn(req.getIsbn());
-        book.setPrice(req.getPrice());
-        book.setPublishDate(req.getPublishDate());
-
-        return bookRepository.save(book);
+    public ResponseEntity<BookDTO.Response> update(
+            @PathVariable Long id,
+            @RequestBody @Valid BookDTO.Request request) {
+        return ResponseEntity.ok(bookService.updateBook(id, request));
     }
 
-    // 삭제 (204 No Content)
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<BookDTO.Response> patchBook(
+            @PathVariable Long id,
+            @RequestBody BookDTO.PatchRequest request) {
+        return ResponseEntity.ok(bookService.patchBook(id, request));
+    }
+
+
+    @PatchMapping("/{id}/detail")
+    public ResponseEntity<BookDTO.BookDetailResponse> patchDetail(
+            @PathVariable Long id,
+            @RequestBody BookDTO.BookDetailPatchRequest request) {
+        return ResponseEntity.ok(bookService.patchDetail(id, request));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
-        Book book = bookRepository.findById(id)
-                .orElseThrow(() -> new BusinessException("Book Not Found", HttpStatus.NOT_FOUND));
-
-        bookRepository.delete(book);
+        bookService.deleteBook(id);
         return ResponseEntity.noContent().build();
     }
 }

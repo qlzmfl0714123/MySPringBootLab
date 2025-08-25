@@ -5,9 +5,9 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-@Entity
-@Table(name = "books")
 @Getter @Setter
+@NoArgsConstructor @AllArgsConstructor @Builder
+@Entity @Table(name = "books")
 public class Book {
 
     @Id
@@ -30,4 +30,12 @@ public class Book {
     @Column(nullable = false)
     private LocalDate publishDate;
 
+    @OneToOne(mappedBy = "book", fetch = FetchType.LAZY,
+            cascade = CascadeType.ALL, orphanRemoval = true)
+    private BookDetail bookDetail;
+
+    public void setBookDetail(BookDetail detail) {
+        this.bookDetail = detail;
+        if (detail != null) detail.setBook(this);
+    }
 }
